@@ -56,7 +56,7 @@ char * place_to_string(PlaceType place) {
       return("no_place");
     default:
       printf("How did I get here?\n");
-      return;
+      return "invalid";
   }
 }
 
@@ -355,11 +355,11 @@ void menu_handling(Boat *boats[], int *boat_count) {
   printf("Welcome to the Boat Management System\n");
   printf("-------------------------------------\n");
   int current = 1;
-  char line[1];
+  char choice;
   while (current) {
     printf("(I)nventory, (A)dd, (R)emove, (P)ayment, (M)onth, e(X)it : ");
     
-    if (scanf(" %c", &line) != 1) {
+    if (scanf(" %c", &choice) != 1) {
       // Clear the input buffer first before continuing
       while (getchar() != '\n' && getchar() != EOF); // clear
       printf("ERROR - Improper input. Please try again.\n");
@@ -367,13 +367,15 @@ void menu_handling(Boat *boats[], int *boat_count) {
     }
 
     while (getchar() != '\n'); // flush leftover newline before fgets
-
-    if (strcasecmp(line, "I") == 0) { // case insensitive
+    
+    // print the INVENTORY
+    if (choice == 'I' || choice == 'i') { // case insensitive
       inventory(*boat_count, boats);
       continue;
     }
 
-    else if (strcasecmp(line, "A") == 0) { // case insensitive
+    // ADD a boat tp inventory
+    else if (choice == 'A' || choice == 'a') { // case insensitive
       char dummy[256];
       printf("Please enter the boat data in CSV format: ");
       if (fgets(dummy, sizeof(dummy), stdin) == NULL) {
@@ -383,12 +385,15 @@ void menu_handling(Boat *boats[], int *boat_count) {
       dummy[strcspn(dummy, "\n")] = '\0'; // Strip newline
       
       int result = add_boat(boats, boat_count, dummy); // check if boat_count is passed right
+      // below are error messages associated with each error code from adding boats
       if (result == 0) {
-        printf("ERROR: 120 boats are already in the marina. No new boats can be added.\n");
+        printf("ERROR: 120 boats are already in the marina."
+        " No new boats can be added.\n");
         continue;
       }
       else if (result == -1) {
-        printf("ERROR: Please enter valid comma-separated values. Boat not added.\n");
+        printf("ERROR: Please enter valid comma-separated values. "
+        "Boat not added.\n");
         continue;
       }
       else if (result == -2) {
@@ -396,16 +401,19 @@ void menu_handling(Boat *boats[], int *boat_count) {
         continue;
       }
       else if (result == -3) {
-        printf("ERROR: User attempted to add a boat with an invalid length. Boat not added.\n");
+        printf("ERROR: User attempted to add a boat with an invalid length."
+        " Boat not added.\n");
         continue;
       }
       else if (result == -4) {
-        printf("ERROR: User attempted to add a boat with an invalid location type. Boat not added.\n");
+        printf("ERROR: User attempted to add a boat with an invalid location type. "
+        "Boat not added.\n");
         continue;
       }
 
       else if (result == -5) {
-        printf("ERROR: User attempted to enter an invalid amount owed, less than 0. Boat not added.\n");
+        printf("ERROR: User attempted to enter an invalid amount owed, "
+        "less than 0. Boat not added.\n");
         continue;
       }
       
@@ -447,7 +455,7 @@ void menu_handling(Boat *boats[], int *boat_count) {
     }
     
     // REMOVE boat
-    else if (strcasecmp(line, "R") == 0) { // case insensitive.
+    else if (choice == 'R' || choice == 'r') { // case insensitive.
       char name[128];
       printf("Please enter the name of the boat to remove: ");
       while(1) {
@@ -465,7 +473,8 @@ void menu_handling(Boat *boats[], int *boat_count) {
         continue;
       }
       else if (result == -1) {
-        printf("ERROR: There is no boat named %s in the database. No boats deleted.\n", name);
+        printf("ERROR: There is no boat named %s in the database."
+        " No boats deleted.\n", name);
         continue;
       }
 
@@ -477,7 +486,7 @@ void menu_handling(Boat *boats[], int *boat_count) {
     }
 
     // make PAYMENT
-    else if (strcasecmp(line, "P") == 0) {
+    else if (choice == 'P' || choice == 'p') {
       char name[128];
       float amount = 0;
       printf("Please enter the boat name: ");
@@ -503,7 +512,7 @@ void menu_handling(Boat *boats[], int *boat_count) {
         continue;
       }
       // clear buffer after successful read
-      while (getchar() != '\n' && getchar() != EOF)
+      while (getchar() != '\n' && getchar() != EOF);
 
       int result = make_payment(boat_count, boats, amount, index);
       if (result == 0) {
@@ -519,13 +528,13 @@ void menu_handling(Boat *boats[], int *boat_count) {
       }
     }
 
-    else if (strcasecmp(line, "M") == 0) {
+    else if (choice == 'M' || choice == 'm') {
       monthly_charges(boat_count, boats);
       printf("Amounts owed have been updated for the new month. \n");
       continue;
     }
 
-    else if (strcasecmp(line, "X") == 0) {
+    else if (choice == 'X' || choice == 'x') {
       printf("Now exiting the Boat Management System.\n");
       return;
       // exit, memory is freed in main 
@@ -596,18 +605,4 @@ int main(int argc, char *argv[]) { // takes in argument
 }
 
 
-/*
-
-TO DO:
-
-- add explicit error handle for malloc issue
-- save changes to a csv file
-- check the number of command line args (done, just see if valid)
-
-style:
-- error handling done inside interactive loop
-- functions only called if they can be handled
-- store changes in original arg csv
-
-*/
 
