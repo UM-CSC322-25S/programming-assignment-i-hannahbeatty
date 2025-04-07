@@ -8,7 +8,11 @@ NOTES FOR GRADER:
   added error cases for the user attempting to add boats with invalid
   amounts owed, invalid letter chars for slip_number, etc. That is 
   why there are so many error cases in my code for parsing inputs
- 
+
+- I made all things in my code case insensitive, including boat 
+  names. Removing Osita is equivelent to removing osita. Entering "I"
+  is equivelent to entering "i" in the menu.
+
 */
 
 
@@ -231,6 +235,7 @@ int parse_and_create_boat(char line[], Boat **new_boat_out) {
       new_boat->detail.slip = (int)slip_num;
       break;
     }
+    // go case by case to check whether valid entries have been made
     case land: {
       if (strlen(detail) != 1 || detail[0] < 'A' || detail[0] > 'Z') {
         free(new_boat);
@@ -270,7 +275,7 @@ int parse_and_create_boat(char line[], Boat **new_boat_out) {
 
 }
 
-
+// function for adding a new boat
 int add_boat(Boat *boats[], int *boat_count, char line[]) {
   if (*boat_count == 120)
     return 0; // return error flag
@@ -319,6 +324,7 @@ int make_payment(int *boat_count, Boat *boats[], int amount, int index) {
   return 1;
 }
 
+// function for opening and reading from csv file
 void read_csv(const char *filename, Boat *boats[], int *boat_count) {
   FILE * file = fopen(filename, "r"); // read only for now
   if (!file) {
@@ -326,8 +332,8 @@ void read_csv(const char *filename, Boat *boats[], int *boat_count) {
     exit(EXIT_FAILURE);
   }
   
-  // add logic for stopping at 120 and indicating more than 120 boats were in csv
   char line[256];
+  // logic stops csv read if marina is full
   while (fgets(line, sizeof(line), file)) {
     if (*boat_count >= 120) {
       fprintf(stderr, "Marina is full.");
@@ -338,19 +344,21 @@ void read_csv(const char *filename, Boat *boats[], int *boat_count) {
     if (parse_and_create_boat(line, &new_boat) != 0) {
       fprintf(stderr, "Skipping malformed line: %s\n", line);
       continue;
-    }
+    } // if csv has improper lines, won't crash
     if (find_boat_index(*boat_count, boats, new_boat->name) != -1) {
       free(new_boat);
       fprintf(stderr, "Cannot add duplicate boat names.");
-      continue;
+      continue; // prevents duplicates
     }     
     boats[*boat_count] = new_boat;
     (*boat_count)++;
   }
-  fclose(file);
+  fclose(file); // close file after reading
+  // use qsort for alphabetically sorted array of ptrs
   qsort(boats, *boat_count, sizeof(Boat *), compare_boats);
 }
 
+// function for all user interaction handling
 void menu_handling(Boat *boats[], int *boat_count) {
   printf("Welcome to the Boat Management System\n");
   printf("-------------------------------------\n");
@@ -519,6 +527,7 @@ void menu_handling(Boat *boats[], int *boat_count) {
         printf("ERROR: You cannot make a negative payment. No payment made.\n");
         continue;
       }
+      // prevent overpay
       else if (result == -1) {
         printf("That is more than the amount owed, $%.2f. No payment made.\n", boats[index]->owed);
         continue;
@@ -527,13 +536,15 @@ void menu_handling(Boat *boats[], int *boat_count) {
         printf("Amount $%.2f paid.\n", amount);
       }
     }
-
+    
+    // update MONTLY amounts owed
     else if (choice == 'M' || choice == 'm') {
       monthly_charges(boat_count, boats);
       printf("Amounts owed have been updated for the new month. \n");
       continue;
-    }
-
+    } 
+    
+    // EXIT from the program
     else if (choice == 'X' || choice == 'x') {
       printf("Now exiting the Boat Management System.\n");
       return;
@@ -541,13 +552,14 @@ void menu_handling(Boat *boats[], int *boat_count) {
     }
 
     else {
-      // handle the issue here
+      // User put in something not in menu
       printf("ERROR: User did not enter a valid input from the menu.\n");
       continue;
     }
   }
 } 
 
+// function for updating csv with new info
 void update_csv(const char *filename, Boat *boats[], int *boat_count) {
   // open file we originally read from
   FILE *file = fopen(filename, "w"); // CLEARS ORIGINAL FILE
@@ -556,7 +568,8 @@ void update_csv(const char *filename, Boat *boats[], int *boat_count) {
     free_all_boats(boats, boat_count);
     exit(EXIT_FAILURE);
   }
-
+  
+  // go line by line and add each boat
   for (int i = 0; i < *boat_count; i++) {
     Boat *b = boats[i];
     fprintf(file, "%s,%.0f,%s,", b->name, b->length, place_to_string(b->location));
@@ -603,6 +616,3 @@ int main(int argc, char *argv[]) { // takes in argument
   update_csv(argv[1], boats, &boat_count); // save to original csv
   free_all_boats(boats, &boat_count); // free the boat allocated structs
 }
-
-
-
